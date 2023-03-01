@@ -1,0 +1,55 @@
+import requests
+
+# Set up authentication parameters
+client_id = '84800314734d40a196bdb39ad05b6f84'
+client_secret = '8c78fa587c1142ee9511526ab94463b2'
+grant_type = 'client_credentials'
+
+# Make request to get access token
+response = requests.post('https://accounts.spotify.com/api/token',
+                         data={'grant_type': grant_type},
+                         auth=(client_id, client_secret))
+
+# Get access token from response
+access_token = response.json()['access_token']
+
+# Set up API endpoint and query parameters
+url = 'https://api.spotify.com/v1/search'
+query = 'genre:"rock fusion" OR genre:"alternative pop-punk"'
+params = {
+    'q': query,
+    'type': 'playlist',
+    'market': 'US',
+    'limit': 10
+}
+
+# Make request to Spotify API to get top playlists
+response = requests.get(url, headers={'Authorization': 'Bearer ' + access_token}, params=params)
+
+# Get playlist IDs from response
+playlist_ids = [result['id'] for result in response.json()['playlists']['items']]
+
+# Set up API endpoint and query parameters to get track IDs for KiddHillz's "Saviour" song
+query = 'artist:"KiddHillz" track:"Saviour"'
+params = {
+    'q': query,
+    'type': 'track',
+    'market': 'US',
+    'limit': 1
+}
+
+# Make request to Spotify API to get track ID for "Saviour"
+response = requests.get(url, headers={'Authorization': 'Bearer ' + access_token}, params=params)
+
+# Get track ID from response
+track_id = response.json()['tracks']['items'][0]['id']
+
+# Use the Spotify Web API's PUT /me/player/play endpoint to start playing the tracks in each playlist
+for playlist_id in playlist_ids:
+    url = f'https://api.spotify.com/v1/playlists/{playlist_id}/tracks'
+    data = {
+        'uris': [f'spotify:track:{track_id}'],
+        'position_ms': 0
+    }
+    response = requests.post(url, headers={'Authorization': 'Bearer ' + access_token}, json=data)
+    print(response.status_code)
